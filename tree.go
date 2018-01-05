@@ -140,79 +140,83 @@ walk:
 		}
 
 		// Make new node a child of this node
-		if i < len(path) {
-			path = path[i:]
-
-			if n.wildChild {
-				n = n.children[0]
-				n.priority++
-
-				// Update maxParams of the child node
-				if numParams > n.maxParams {
-					n.maxParams = numParams
-				}
-				numParams--
-
-				// Check if the wildcard matches
-				if len(path) >= len(n.path) && n.path == path[:len(n.path)] &&
-					// Check for longer wildcard, e.g. :name and :names
-					(len(n.path) >= len(path) || path[len(n.path)] == '/') {
-					continue walk
-				} else {
-					// Wildcard conflict
-					var pathSeg string
-					if n.nType == catchAll {
-						pathSeg = path
-					} else {
-						pathSeg = strings.SplitN(path, "/", 2)[0]
-					}
-					prefix := fullPath[:strings.Index(fullPath, pathSeg)] + n.path
-					panic("'" + pathSeg +
-						"' in new path '" + fullPath +
-						"' conflicts with existing wildcard '" + n.path +
-						"' in existing prefix '" + prefix +
-						"'")
-				}
-			}
-
-			c := path[0]
-
-			// slash after param
-			if n.nType == param && c == '/' && len(n.children) == 1 {
-				n = n.children[0]
-				n.priority++
-				continue walk
-			}
-
-			// Check if a child with the next path byte exists
-			for i := 0; i < len(n.indices); i++ {
-				if c == n.indices[i] {
-					i = n.incrementChildPrio(i)
-					n = n.children[i]
-					continue walk
-				}
-			}
-
-			// Otherwise insert it
-			if c != ':' && c != '*' {
-				// []byte for proper unicode char conversion, see #65
-				n.indices += string([]byte{c})
-				child := &node{
-					maxParams: numParams,
-				}
-				n.children = append(n.children, child)
-				n.incrementChildPrio(len(n.indices) - 1)
-				n = child
-			}
-			n.insertChild(numParams, path, fullPath, handle)
+		if i > len(path) {
 			return
+		}
 
-		} else if i == len(path) { // Make node a (in-path) leaf
+		if i == len(path) { // Make node a (in-path) leaf
 			if n.handle != nil {
 				panic("a handle is already registered for path '" + fullPath + "'")
 			}
 			n.handle = handle
+			return
 		}
+
+		// i < len(path)
+		path = path[i:]
+
+		if n.wildChild {
+			n = n.children[0]
+			n.priority++
+
+			// Update maxParams of the child node
+			if numParams > n.maxParams {
+				n.maxParams = numParams
+			}
+			numParams--
+
+			// Check if the wildcard matches
+			if len(path) >= len(n.path) && n.path == path[:len(n.path)] &&
+				// Check for longer wildcard, e.g. :name and :names
+				(len(n.path) >= len(path) || path[len(n.path)] == '/') {
+				continue walk
+			} else {
+				// Wildcard conflict
+				var pathSeg string
+				if n.nType == catchAll {
+					pathSeg = path
+				} else {
+					pathSeg = strings.SplitN(path, "/", 2)[0]
+				}
+				prefix := fullPath[:strings.Index(fullPath, pathSeg)] + n.path
+				panic("'" + pathSeg +
+					"' in new path '" + fullPath +
+					"' conflicts with existing wildcard '" + n.path +
+					"' in existing prefix '" + prefix +
+					"'")
+			}
+		}
+
+		c := path[0]
+
+		// slash after param
+		if n.nType == param && c == '/' && len(n.children) == 1 {
+			n = n.children[0]
+			n.priority++
+			continue walk
+		}
+
+		// Check if a child with the next path byte exists
+		for i := 0; i < len(n.indices); i++ {
+			if c == n.indices[i] {
+				i = n.incrementChildPrio(i)
+				n = n.children[i]
+				continue walk
+			}
+		}
+
+		// Otherwise insert it
+		if c != ':' && c != '*' {
+			// []byte for proper unicode char conversion, see #65
+			n.indices += string([]byte{c})
+			child := &node{
+				maxParams: numParams,
+			}
+			n.children = append(n.children, child)
+			n.incrementChildPrio(len(n.indices) - 1)
+			n = child
+		}
+		n.insertChild(numParams, path, fullPath, handle)
 		return
 	}
 }
