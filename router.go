@@ -117,6 +117,7 @@ type Router struct {
 	// For example if /foo/ is requested but a route only exists for /foo, the
 	// client is redirected to /foo with http status code 301 for GET requests
 	// and 307 for all other request methods.
+	// url 结尾的地方如果有 / 的话会 redirect
 	RedirectTrailingSlash bool
 
 	// If enabled, the router tries to fix the current request path, if no
@@ -128,6 +129,7 @@ type Router struct {
 	// all other request methods.
 	// For example /FOO and /..//Foo could be redirected to /foo.
 	// RedirectTrailingSlash is independent of this option.
+	// 如果有多余的 // 或者 ../ 相对路径，那么会进行路径修正，然后返回一个重定向
 	RedirectFixedPath bool
 
 	// If enabled, the router checks if another method is allowed for the
@@ -140,10 +142,13 @@ type Router struct {
 
 	// If enabled, the router automatically replies to OPTIONS requests.
 	// Custom OPTIONS handlers take priority over automatic replies.
+	// 打开的情况下 router 会自动响应 OPTION 请求
+	// 自定义的 Option handlers 会有更高的权限
 	HandleOPTIONS bool
 
 	// Configurable http.Handler which is called when no matching route is
 	// found. If it is not set, http.NotFound is used.
+	// http 404 自定义 handler
 	NotFound http.Handler
 
 	// Configurable http.Handler which is called when a request
@@ -151,6 +156,7 @@ type Router struct {
 	// If it is not set, http.Error with http.StatusMethodNotAllowed is used.
 	// The "Allow" header with allowed request methods is set before the handler
 	// is called.
+	// http status 405 自定义 handler
 	MethodNotAllowed http.Handler
 
 	// Function to handle panics recovered from http handlers.
@@ -158,14 +164,17 @@ type Router struct {
 	// 500 (Internal Server Error).
 	// The handler can be used to keep your server from crashing because of
 	// unrecovered panics.
+	// panic 的时候返回 500 的自定义 handler
 	PanicHandler func(http.ResponseWriter, *http.Request, interface{})
 }
 
 // Make sure the Router conforms with the http.Handler interface
 var _ http.Handler = New()
 
-// New returns a new initialized Router.
-// Path auto-correction, including trailing slashes, is enabled by default.
+// New 初始化 Router 数据结构
+// 默认会进行 path 自动修正，例如地址末尾的 / 会被删除
+// 注意，默认 router 没有设置 NotFound / MethodNotAllowed / PanicHandler
+// Panic 也经常放在 Middleware 中进行处理
 func New() *Router {
 	return &Router{
 		RedirectTrailingSlash:  true,
