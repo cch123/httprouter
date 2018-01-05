@@ -234,6 +234,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 		}
 
 		// find wildcard end (either '/' or path end)
+		// 查找下一个 / 或者整个路径结束
 		end := i + 1
 		for end < max && path[end] != '/' {
 			switch path[end] {
@@ -256,7 +257,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 		}
 
 		// check if the wildcard has a name
-		// 参数名字必须是 :id 不能 :/ ，end-i = 1，这样没有参数名
+		// 参数名字必须是 :id ，而不能 :/ => end-i = 1，这样没有参数名
 		if end-i < 2 {
 			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
 		}
@@ -264,6 +265,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 		if c == ':' { // param
 			// split path at the beginning of the wildcard
 			if i > 0 {
+				// path 都是以 / 开头的
 				n.path = path[offset:i]
 				offset = i
 			}
@@ -336,12 +338,15 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 			}
 			n.children = []*node{child}
 
+			// 注意，直接 return 了。。。
 			return
 		}
 	}
 
 	// insert remaining path part and handle to the leaf
 	// 前面已经把后面的参数都处理完了，这里就是纯字符串路径
+	// /user/:id/path，剩下的是 path
+	// /user/:id/:abc，剩下的是 "" 空字符串
 	n.path = path[offset:]
 	n.handle = handle
 }
