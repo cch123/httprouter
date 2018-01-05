@@ -251,10 +251,12 @@ func (r *Router) Handle(method, path string, handle Handle) {
 		r.trees = make(map[string]*node)
 	}
 
+	// 每一种 method : GET/PUT/POST/DELETE
+	// 都会有单独的一棵树
 	root := r.trees[method]
 	if root == nil {
 		root = new(node)
-		r.trees[method] = root
+		r.trees[method] = root // 注意这里存的是指针，否则 map 的 val 没法修改
 	}
 
 	root.addRoute(path, handle)
