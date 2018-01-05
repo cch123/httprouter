@@ -173,8 +173,9 @@ var _ http.Handler = New()
 
 // New 初始化 Router 数据结构
 // 默认会进行 path 自动修正，例如地址末尾的 / 会被删除
-// 注意，默认 router 没有设置 NotFound / MethodNotAllowed / PanicHandler
-// Panic 也经常放在 Middleware 中进行处理
+// 注意，默认 router 没有设置 ：
+// 	   NotFound / MethodNotAllowed / PanicHandler
+//     Panic 也经常放在 Middleware 中进行处理
 func New() *Router {
 	return &Router{
 		RedirectTrailingSlash:  true,
@@ -185,36 +186,45 @@ func New() *Router {
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
+// 把字符串类型的参数导出为强制的函数接口
+// 这样不容易因为拼写错误导致 bug
+// 使用起来也更方便一些
 func (r *Router) GET(path string, handle Handle) {
 	r.Handle("GET", path, handle)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
+// 同 GET @tag Get
 func (r *Router) HEAD(path string, handle Handle) {
 	r.Handle("HEAD", path, handle)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
+// 同 GET
 func (r *Router) OPTIONS(path string, handle Handle) {
 	r.Handle("OPTIONS", path, handle)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)
+// 同 GET
 func (r *Router) POST(path string, handle Handle) {
 	r.Handle("POST", path, handle)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handle)
+// 同 PUT
 func (r *Router) PUT(path string, handle Handle) {
 	r.Handle("PUT", path, handle)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handle)
+// 同 GET
 func (r *Router) PATCH(path string, handle Handle) {
 	r.Handle("PATCH", path, handle)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
+// 同 GET
 func (r *Router) DELETE(path string, handle Handle) {
 	r.Handle("DELETE", path, handle)
 }
@@ -227,6 +237,11 @@ func (r *Router) DELETE(path string, handle Handle) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
+// Handle 在路由参数 path 上挂一个 handler，方法是 method
+// 有 GET/POST/PUT/DELETE/PATCH
+// Handle 函数设计为一次性，或者少量的批量调用
+// 同时支持了非 http 标准的一些方法，比如 PUT PATCH
+// 也可以完全用自己的字符串来定义一种 method，比如 FUCK
 func (r *Router) Handle(method, path string, handle Handle) {
 	if path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
