@@ -139,7 +139,6 @@ walk:
 			n.wildChild = false
 		}
 
-		// Make new node a child of this node
 		if i > len(path) {
 			return
 		}
@@ -152,6 +151,7 @@ walk:
 			return
 		}
 
+		// Make new node a child of this node
 		// i < len(path)
 		path = path[i:]
 
