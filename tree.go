@@ -283,6 +283,9 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 			// if the path doesn't end with the wildcard, then there
 			// will be another non-wildcard subpath starting with '/'
 			if end < max {
+				// 如果之后还有路径，在下一次的循环中，这个 n.path 是会被覆盖掉的，注意
+				// 感觉这里设计得不是很好，不太容易读懂
+				// 在 269 行会被覆盖
 				n.path = path[offset:end]
 				offset = end
 
