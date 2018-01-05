@@ -283,9 +283,12 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 			// if the path doesn't end with the wildcard, then there
 			// will be another non-wildcard subpath starting with '/'
 			if end < max {
-				// 如果之后还有路径，在下一次的循环中，这个 n.path 是会被覆盖掉的，注意
-				// 感觉这里设计得不是很好，不太容易读懂
-				// 在 269 行会被覆盖
+				// 如果当前这个结点是 :id
+				// 且之后还有别的路径
+				// 那么先把孩子给占了，path 设置为 :id
+				// 再修改掉 offset
+				// 下次处理的时候就是从 :id 之后的内容开始处理了
+				// 感觉这段代码写得不怎么样，可以想想怎么写好一些
 				n.path = path[offset:end]
 				offset = end
 
@@ -348,7 +351,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 
 	// insert remaining path part and handle to the leaf
 	// 前面已经把后面的参数都处理完了，这里就是纯字符串路径
-	// /user/:id/path，剩下的是 path
+	// /user/:id/path，剩下的是 /path
 	// /user/:id/:abc，剩下的是 "" 空字符串
 	n.path = path[offset:]
 	n.handle = handle
