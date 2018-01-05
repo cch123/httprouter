@@ -36,13 +36,14 @@ func countParams(path string) uint8 {
 	return uint8(n)
 }
 
+// 结点的类型
 type nodeType uint8
 
 const (
-	static nodeType = iota // default
-	root
-	param
-	catchAll
+	static   nodeType = iota // default
+	root                     // 根结点
+	param                    // 参数结点，例如 :id
+	catchAll                 // 通配符结点，例如 *anyway
 )
 
 type node struct {
@@ -91,6 +92,7 @@ func (n *node) addRoute(path string, handle Handle) {
 	// empty tree
 	if len(n.path) == 0 && len(n.children) == 0 {
 		n.insertChild(numParams, path, fullPath, handle)
+		// 无结点时插入，显然就是根结点了
 		n.nType = root
 		return
 	}
@@ -246,12 +248,15 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 
 		// check if this Node existing children which would be
 		// unreachable if we insert the wildcard here
+		// 不支持 /user/:id 和 /user/get 同时出现在路由选项中
+		// 算作冲突，直接 panic
 		if len(n.children) > 0 {
 			panic("wildcard route '" + path[i:end] +
 				"' conflicts with existing children in path '" + fullPath + "'")
 		}
 
 		// check if the wildcard has a name
+		// 参数名字必须是 :id 不能 :/ ，end-i = 1，这样没有参数名
 		if end-i < 2 {
 			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
 		}
@@ -287,7 +292,13 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 				n = child
 			}
 
-		} else { // catchAll
+		}
+
+		// catch-all parameters have the form *name.
+		// Like the name suggests, they match everything.
+		// Therefore they must always be at the end of the pattern:
+		// 必须出现在整个路径的最后一部分
+		if c == '*' { // catchAll
 			if end != max || numParams > 1 {
 				panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
 			}
@@ -330,6 +341,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 	}
 
 	// insert remaining path part and handle to the leaf
+	// 前面已经把后面的参数都处理完了，这里就是纯字符串路径
 	n.path = path[offset:]
 	n.handle = handle
 }
