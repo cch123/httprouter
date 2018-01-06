@@ -115,6 +115,14 @@ walk:
 		}
 
 		// Split edge
+		// 譬如原来的结点是 /user/info/getList
+		// 新的输入是      /user/internal
+		// 树中原来的结点是 /user/info/getList
+		// 公共子串是      /user/in
+		// 然后就要在      /user/in  这个位置进行分裂
+		// 变成           path: /user/in, indices: "ft"  : level 1
+		//                |-------- path: fo/getList    : level 2
+		//                |-------- path: ternal        : level 2
 		if i < len(n.path) {
 			child := node{
 				path:      n.path[i:],
@@ -141,10 +149,18 @@ walk:
 			n.wildChild = false
 		}
 
+		// 理论上就不可能存在
 		if i > len(path) {
 			return
 		}
 
+		// 说明输入的路径是原路径的子集
+		// 原路径是   /user/info/get
+		// 如果输入是 /user/info
+		// 那么在上面 126 行已经把结点拆成两个了，现在的结点一定是
+		//          /user/info
+		//           |----- get
+		// 只要把    /user/info 这个父结点挂上 handler 就行了
 		if i == len(path) { // Make node a (in-path) leaf
 			if n.handle != nil {
 				panic("a handle is already registered for path '" + fullPath + "'")
@@ -192,6 +208,7 @@ walk:
 		c := path[0]
 
 		// slash after param
+		// /:id/get 这种情况
 		if n.nType == param && c == '/' && len(n.children) == 1 {
 			n = n.children[0]
 			n.priority++
@@ -199,6 +216,7 @@ walk:
 		}
 
 		// Check if a child with the next path byte exists
+		// 如果在子结点索引中找到了首字母，那么直接递归 walk
 		for i := 0; i < len(n.indices); i++ {
 			if c == n.indices[i] {
 				i = n.incrementChildPrio(i)
@@ -207,6 +225,9 @@ walk:
 			}
 		}
 
+		// 说明子结点中没有相同开头的字母
+		// 需要单独插入
+		// 这种情况和根结点时的情况是一致的
 		// Otherwise insert it
 		if c != ':' && c != '*' {
 			// []byte for proper unicode char conversion, see #65
